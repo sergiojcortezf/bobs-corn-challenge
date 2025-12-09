@@ -11,6 +11,10 @@ class Transaction(models.Model):
     amount = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    @classmethod
+    def get_count_for_ip(cls, ip):
+        return cls.objects.filter(client_ip=ip).count()
+
     def __str__(self):
         return f"{self.client_ip} - {self.created_at}"
 

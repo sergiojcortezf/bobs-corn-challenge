@@ -40,7 +40,6 @@
     </div>
 
     <script>
-        // Obtenemos el Token CSRF que Django inyecta en el template
         const CSRF_TOKEN = '{{ csrf_token }}';
 
         async function buyCorn() {
@@ -49,44 +48,37 @@
             const counter = document.getElementById('counter');
             const icon = document.getElementById('corn-icon');
 
-            // 1. UI Loading State
             btn.disabled = true;
             btn.classList.add('opacity-75', 'cursor-not-allowed');
             btn.innerHTML = 'Procesando... 🚜';
-            msgArea.className = "mt-6 text-sm font-medium min-h-[20px] opacity-0"; // Limpiar mensajes
+            msgArea.className = "mt-6 text-sm font-medium min-h-[20px] opacity-0";
 
             try {
-                // 2. Petición a la API
                 const response = await fetch('/api/buy/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': CSRF_TOKEN // Indispensable para seguridad en Django
+                        'X-CSRFToken': CSRF_TOKEN
                     }
                 });
 
                 const data = await response.json();
 
-                // 3. Manejo de Respuesta
                 msgArea.classList.remove('opacity-0');
 
                 if (response.ok) {
-                    // ÉXITO (200)
                     counter.innerText = data.total_corn;
                     msgArea.innerText = data.message;
                     msgArea.className = "mt-6 p-3 bg-green-100 text-green-700 rounded-lg";
                     
-                    // Animación
                     icon.classList.add('animate-corn');
                     setTimeout(() => icon.classList.remove('animate-corn'), 300);
 
                 } else if (response.status === 429) {
-                    // RATE LIMIT (429)
                     msgArea.innerText = "✋ ¡Alto ahí! Bob dice: Solo 1 por minuto.";
                     msgArea.className = "mt-6 p-3 bg-red-100 text-red-700 rounded-lg border border-red-200";
                     
                 } else {
-                    // OTRO ERROR
                     msgArea.innerText = "Error desconocido en la granja.";
                     msgArea.className = "mt-6 text-red-500";
                 }
@@ -96,7 +88,6 @@
                 msgArea.innerText = "Error de conexión con el servidor.";
                 msgArea.className = "mt-6 text-red-500";
             } finally {
-                // 4. Restaurar UI
                 btn.disabled = false;
                 btn.classList.remove('opacity-75', 'cursor-not-allowed');
                 btn.innerHTML = 'COMPRAR MAÍZ';

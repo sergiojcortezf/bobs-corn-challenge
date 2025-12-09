@@ -1,8 +1,9 @@
+from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Transaction
 from .throttles import CornRateThrottle
-from django.shortcuts import render
+from .utils import get_client_ip
 
 class BuyCornView(APIView):
     """
@@ -12,20 +13,13 @@ class BuyCornView(APIView):
     throttle_classes = [CornRateThrottle]
 
     def post(self, request):
-        # 1. Obtener la IP del cliente de forma robusta
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
+        
+        ip = get_client_ip(request)
 
-        # 2. Registrar la transacción
-        # Si la ejecución llega a esta línea, significa que el Throttle permitió el paso.
-        # Si no, DRF hubiera lanzado automáticamente un error 429.
+        # Lógica de negocio
         Transaction.objects.create(client_ip=ip)
 
-        # 3. Contar cuánto maíz ha comprado este cliente en total
-        total_corn = Transaction.objects.filter(client_ip=ip).count()
+        total_corn = Transaction.get_count_for_ip(ip)
 
         return Response({
             "message": "Enjoy your corn! 🌽",
@@ -37,13 +31,9 @@ def index(request):
     """
     Vista que renderiza el frontend e inyecta el contador inicial.
     """
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
+    ip = get_client_ip(request)
 
-    initial_count = Transaction.objects.filter(client_ip=ip).count()
+    initial_count = Transaction.get_count_for_ip(ip)
 
     # 3. Pasar el dato al HTML
     return render(request, 'core/index.html', {'initial_count': initial_count})
