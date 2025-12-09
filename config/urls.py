@@ -1,14 +1,16 @@
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from core.views import index
 
 urlpatterns = [
+
+    path('', index, name='home'),
+
     path('admin/', admin.site.urls),
-    
-    # Nuestras rutas de la API (prefijo /api/)
     path('api/', include('core.urls')),
 
-    # Documentación (Swagger) - ¡Un bonus para verte Pro!
+    # Docs
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]

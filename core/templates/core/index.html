@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bob's Corn Shop 🌽</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes bounce-short {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-corn { animation: bounce-short 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-amber-50 min-h-screen flex items-center justify-center font-sans p-4">
+
+    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border-t-8 border-yellow-400">
+        
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Bob's Corn Shop</h1>
+        <p class="text-gray-500 mb-8">Política estricta: 1 maíz por minuto.</p>
+
+        <div class="bg-yellow-100 rounded-lg p-6 mb-8">
+            <div class="text-6xl mb-2" id="corn-icon">🌽</div>
+            <p class="text-gray-600 font-medium">Has comprado:</p>
+            <p class="text-4xl font-extrabold text-yellow-600" id="counter">{{ initial_count }}</p>
+        </div>
+
+        <button onclick="buyCorn()" id="buy-btn" 
+            class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-6 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex justify-center items-center gap-2">
+            <span>COMPRAR MAÍZ</span>
+        </button>
+
+        <div id="message-area" class="mt-6 text-sm font-medium min-h-[20px] transition-all duration-300 opacity-0">
+            </div>
+
+        <div class="mt-8 text-xs text-gray-400">
+            Backend: Django REST Framework | Frontend: Tailwind + JS
+        </div>
+    </div>
+
+    <script>
+        // Obtenemos el Token CSRF que Django inyecta en el template
+        const CSRF_TOKEN = '{{ csrf_token }}';
+
+        async function buyCorn() {
+            const btn = document.getElementById('buy-btn');
+            const msgArea = document.getElementById('message-area');
+            const counter = document.getElementById('counter');
+            const icon = document.getElementById('corn-icon');
+
+            // 1. UI Loading State
+            btn.disabled = true;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            btn.innerHTML = 'Procesando... 🚜';
+            msgArea.className = "mt-6 text-sm font-medium min-h-[20px] opacity-0"; // Limpiar mensajes
+
+            try {
+                // 2. Petición a la API
+                const response = await fetch('/api/buy/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': CSRF_TOKEN // Indispensable para seguridad en Django
+                    }
+                });
+
+                const data = await response.json();
+
+                // 3. Manejo de Respuesta
+                msgArea.classList.remove('opacity-0');
+
+                if (response.ok) {
+                    // ÉXITO (200)
+                    counter.innerText = data.total_corn;
+                    msgArea.innerText = data.message;
+                    msgArea.className = "mt-6 p-3 bg-green-100 text-green-700 rounded-lg";
+                    
+                    // Animación
+                    icon.classList.add('animate-corn');
+                    setTimeout(() => icon.classList.remove('animate-corn'), 300);
+
+                } else if (response.status === 429) {
+                    // RATE LIMIT (429)
+                    msgArea.innerText = "✋ ¡Alto ahí! Bob dice: Solo 1 por minuto.";
+                    msgArea.className = "mt-6 p-3 bg-red-100 text-red-700 rounded-lg border border-red-200";
+                    
+                } else {
+                    // OTRO ERROR
+                    msgArea.innerText = "Error desconocido en la granja.";
+                    msgArea.className = "mt-6 text-red-500";
+                }
+
+            } catch (error) {
+                console.error(error);
+                msgArea.innerText = "Error de conexión con el servidor.";
+                msgArea.className = "mt-6 text-red-500";
+            } finally {
+                // 4. Restaurar UI
+                btn.disabled = false;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                btn.innerHTML = 'COMPRAR MAÍZ';
+            }
+        }
+    </script>
+</body>
+</html>

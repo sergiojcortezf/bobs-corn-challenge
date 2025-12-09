@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Transaction
 from .throttles import CornRateThrottle
+from django.shortcuts import render
 
 class BuyCornView(APIView):
     """
@@ -30,3 +31,19 @@ class BuyCornView(APIView):
             "message": "Enjoy your corn! 🌽",
             "total_corn": total_corn
         })
+
+
+def index(request):
+    """
+    Vista que renderiza el frontend e inyecta el contador inicial.
+    """
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+
+    initial_count = Transaction.objects.filter(client_ip=ip).count()
+
+    # 3. Pasar el dato al HTML
+    return render(request, 'core/index.html', {'initial_count': initial_count})
