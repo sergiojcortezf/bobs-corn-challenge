@@ -125,9 +125,20 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# DRF and Throttling Settings
+
+# Django REST Framework & Spectacular Settings
+
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
     'DEFAULT_THROTTLE_RATES': {
         'corn_purchase': '1/min',
     }
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': "Bob's Corn Shop API 🌽",
+    'DESCRIPTION': 'API para la venta segura de maíz con Rate Limiting.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
