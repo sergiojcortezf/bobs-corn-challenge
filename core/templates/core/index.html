@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +7,7 @@
     <title>Bob's Corn Shop</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'media',
-        }
+        tailwind.config = { darkMode: 'class' }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -18,85 +16,91 @@
             50% { transform: translateY(-10px); }
         }
         .animate-corn { animation: bounce-short 0.3s ease-in-out; }
+        body, div, p, h1, button { transition: all 0.3s ease; }
     </style>
 </head>
 <body class="bg-amber-50 dark:bg-slate-900 min-h-screen flex items-center justify-center font-sans p-4 transition-colors duration-300">
 
-    <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl max-w-md w-full text-center border-t-8 border-yellow-400 transition-colors duration-300">
+    <button onclick="toggleDarkMode()" class="absolute top-4 right-4 p-3 rounded-full bg-white dark:bg-slate-800 shadow-lg text-xl hover:scale-110 transition-transform">
+        <span id="dark-icon">🌙</span>
+    </button>
+
+    <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl max-w-md w-full text-center border-t-8 border-yellow-400 dark:border-yellow-600 transition-colors duration-300 relative overflow-hidden">
         
         <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Bob's Corn Shop</h1>
-        <p class="text-gray-500 dark:text-gray-400 mb-8" id="subtitle">Política estricta: 1 maíz por minuto.</p>
+        <p class="text-gray-500 dark:text-gray-400 mb-8">Política estricta: 1 maíz por minuto.</p>
 
-        <div class="bg-yellow-100 dark:bg-yellow-900/30 rounded-lg p-6 mb-8 transition-colors duration-300 border border-transparent dark:border-yellow-700/50">
-            <div class="text-6xl mb-2 filter drop-shadow-md" id="corn-icon">🌽</div>
+        <div class="bg-yellow-100 dark:bg-yellow-900/20 rounded-lg p-6 mb-8 border border-transparent dark:border-yellow-700/50">
+            <div class="text-6xl mb-2 filter drop-shadow-md cursor-pointer hover:scale-110 transition-transform" id="corn-icon">🌽</div>
             
             {% if initial_count == 0 %}
                 <p class="text-gray-600 dark:text-gray-300 font-medium mt-2" id="label-text">¡Empieza tu granja!</p>
-                <p class="text-lg font-bold text-yellow-700 dark:text-yellow-500 mt-1" id="counter">0</p>
             {% else %}
                 <p class="text-gray-600 dark:text-gray-300 font-medium" id="label-text">Has comprado:</p>
-                <p class="text-4xl font-extrabold text-yellow-800 dark:text-yellow-400 tabular-nums" id="counter" aria-live="polite">
-                    {{ initial_count }}
-                </p>
             {% endif %}
+            
+            <p class="text-4xl font-extrabold text-yellow-800 dark:text-yellow-400 tabular-nums mt-1" id="counter">
+                {{ initial_count }}
+            </p>
         </div>
 
-        <button onclick="handleBuyClick()" id="buy-btn" 
-            class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-6 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex justify-center items-center gap-2 min-h-[60px]">
-            <span>COMPRAR MAÍZ</span>
-        </button>
+        <div class="relative w-full">
+            <button onclick="handleBuyClick()" id="buy-btn" 
+                class="relative w-full bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 transform active:scale-95 shadow-lg flex justify-center items-center gap-2 min-h-[60px] overflow-hidden z-10">
+                <span id="btn-text" class="z-20 relative">COMPRAR MAÍZ</span>
+            </button>
+            <div id="progress-bar" class="absolute top-0 left-0 h-full bg-gray-600/50 z-10 w-0 transition-none pointer-events-none rounded-xl"></div>
+        </div>
 
-        <div id="message-area" aria-live="assertive" class="mt-6 text-sm font-medium min-h-[20px] transition-all duration-300 opacity-0 dark:text-gray-200">
+        <div id="message-area" class="mt-6 text-sm font-medium min-h-[20px] transition-all duration-300 opacity-0 dark:text-gray-200">
         </div>
         
         <div id="fun-fact" class="mt-4 text-xs text-gray-500 dark:text-gray-400 italic h-0 overflow-hidden transition-all duration-500">
         </div>
 
         <div class="mt-8 text-xs text-gray-400 dark:text-gray-600">
-            Backend: Django REST Framework | Frontend: Tailwind + JS
+            Backend: Django REST | Frontend: JS + Tailwind
         </div>
     </div>
+
+    <audio id="sound-success" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+    <audio id="sound-error" src="https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3"></audio>
 
     <script>
         const CSRF_TOKEN = '{{ csrf_token }}';
         const STORAGE_KEY = 'bobs_corn_lock_until';
         
         const FUN_FACTS = [
-            "¿Sabías que el maíz se cultiva en todos los continentes excepto en la Antártida?",
-            "El maíz tiene siempre un número par de hileras en la mazorca.",
-            "Una mazorca promedio tiene 800 granos.",
-            "El maíz es el cultivo más producido en el mundo.",
-            "Los antiguos mayas creían que los humanos estaban hechos de maíz."
+            "El maíz se cultiva en todos los continentes excepto la Antártida.",
+            "Una mazorca promedio tiene 800 granos en 16 filas.",
+            "El maíz es ingrediente en más de 4,000 productos.",
+            "Hay maíz de colores: rojo, azul, rosa y negro.",
+            "El maíz evolucionó de una hierba silvestre llamada Teosinte."
         ];
 
         document.addEventListener('DOMContentLoaded', () => {
             checkLocalLock();
             window.addEventListener('online', updateOnlineStatus);
             window.addEventListener('offline', updateOnlineStatus);
+            
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.getElementById('dark-icon').innerText = '☀️';
+            }
         });
 
-        function checkLocalLock() {
-            const lockUntil = localStorage.getItem(STORAGE_KEY);
-            if (lockUntil) {
-                const now = Date.now();
-                const remaining = Math.ceil((parseInt(lockUntil) - now) / 1000);
-                if (remaining > 0) startCountdown(remaining);
-                else localStorage.removeItem(STORAGE_KEY);
-            }
-        }
-
-        function updateOnlineStatus() {
-            const btn = document.getElementById('buy-btn');
-            if (navigator.onLine) {
-                btn.disabled = false;
-                btn.innerHTML = "COMPRAR MAÍZ";
-                btn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-400');
-                btn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const icon = document.getElementById('dark-icon');
+            
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                icon.innerText = '🌙';
             } else {
-                btn.disabled = true;
-                btn.innerHTML = "🚜 Sin señal en el campo...";
-                btn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-400');
-                btn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                icon.innerText = '☀️';
             }
         }
 
@@ -105,16 +109,17 @@
             const counter = document.getElementById('counter');
             const icon = document.getElementById('corn-icon');
             const labelText = document.getElementById('label-text');
-
             const previousCount = parseInt(counter.innerText) || 0;
 
-            if (navigator.vibrate) navigator.vibrate(50);
             counter.innerText = previousCount + 1;
-            counter.classList.remove('text-lg')
-            counter.classList.add('text-4xl');
             labelText.innerText = "Has comprado:";
             
             icon.classList.add('animate-corn');
+            playSound('success');
+            if (navigator.vibrate) navigator.vibrate(50);
+            
+            confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ['#EAB308', '#ffffff'] });
+
             setTimeout(() => icon.classList.remove('animate-corn'), 300);
             
             startCountdown(60); 
@@ -130,22 +135,17 @@
                     counter.innerText = data.total_corn;
                     showMessage(data.message, "success");
                     localStorage.setItem(STORAGE_KEY, Date.now() + (60 * 1000));
-                    
-                    confetti({
-                        particleCount: 100,
-                        spread: 70,
-                        origin: { y: 0.6 },
-                        colors: ['#EAB308', '#22C55E', '#FFFFFF']
-                    });
-
                 } else if (response.status === 429) {
                     counter.innerText = previousCount;
+                    playSound('error');
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    
                     const retryAfter = response.headers.get('Retry-After');
                     let timeLeft = retryAfter ? parseInt(retryAfter) : 60;
+                    
                     localStorage.setItem(STORAGE_KEY, Date.now() + (timeLeft * 1000));
                     startCountdown(timeLeft);
                     showMessage("✋ ¡Alto ahí! Bob está descansando.", "error");
-                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
                 } else {
                     throw new Error("Error desconocido");
                 }
@@ -157,50 +157,105 @@
             }
         }
 
+        function playSound(type) {
+            const sound = document.getElementById(type === 'success' ? 'sound-success' : 'sound-error');
+            if(sound) {
+                sound.volume = 0.4;
+                sound.currentTime = 0;
+                sound.play().catch(e => console.log("Audio play failed (user interaction needed)"));
+            }
+        }
+
         function showMessage(text, type) {
             const msgArea = document.getElementById('message-area');
             msgArea.innerHTML = text;
-            msgArea.className = `mt-6 p-3 rounded-lg text-sm font-medium transition-all duration-300 opacity-100 ${type === 'success' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800'}`;
+            msgArea.className = `mt-6 p-3 rounded-lg text-sm font-medium transition-all duration-300 opacity-100 ${type === 'success' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800'}`;
+        }
+
+        function updateOnlineStatus() {
+            const btn = document.getElementById('buy-btn');
+            const btnText = document.getElementById('btn-text');
+            if (navigator.onLine) {
+                if(!localStorage.getItem(STORAGE_KEY)) {
+                    btn.disabled = false;
+                    btnText.innerHTML = "COMPRAR MAÍZ";
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed', 'grayscale');
+                }
+            } else {
+                btn.disabled = true;
+                btnText.innerHTML = "🚜 Sin señal en la granja...";
+                btn.classList.add('opacity-50', 'cursor-not-allowed', 'grayscale');
+            }
         }
 
         let countdownInterval;
+        
+        function checkLocalLock() {
+            const lockUntil = localStorage.getItem(STORAGE_KEY);
+            if (lockUntil) {
+                const now = Date.now();
+                const remaining = Math.ceil((parseInt(lockUntil) - now) / 1000);
+                if (remaining > 0) startCountdown(remaining);
+                else localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+
         function startCountdown(seconds) {
             const btn = document.getElementById('buy-btn');
+            const btnText = document.getElementById('btn-text');
+            const progressBar = document.getElementById('progress-bar');
             const funFactArea = document.getElementById('fun-fact');
             
             if (countdownInterval) clearInterval(countdownInterval);
             
-            funFactArea.innerText = "🌽 Dato: " + FUN_FACTS[Math.floor(Math.random() * FUN_FACTS.length)];
+            funFactArea.innerText = "🌽 " + FUN_FACTS[Math.floor(Math.random() * FUN_FACTS.length)];
             funFactArea.style.height = "auto";
             
             btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            btn.classList.add('cursor-not-allowed');
             
-            const updateText = (s) => btn.innerHTML = `⏳ Espera <span class="tabular-nums font-mono font-bold">${s}</span> segundos...`;
-            updateText(seconds);
+            const totalTime = 60;
+            
+            const updateUI = (currentSec) => {
+                btnText.innerHTML = `⏳ Espera ${currentSec} segundos...`;
+                // Cálculo de barra inversa (se llena o se vacía)
+                const percentage = ((totalTime - currentSec) / totalTime) * 100;
+                progressBar.style.width = `${percentage}%`;
+                progressBar.style.transition = "width 1s linear";
+            };
+            
+            updateUI(seconds);
 
             countdownInterval = setInterval(() => {
                 seconds--;
-                updateText(seconds);
-                if (seconds <= 0) stopCountdown();
+                updateUI(seconds);
+
+                if (seconds <= 0) {
+                    stopCountdown();
+                }
             }, 1000);
         }
 
         function stopCountdown() {
             clearInterval(countdownInterval);
             const btn = document.getElementById('buy-btn');
+            const btnText = document.getElementById('btn-text');
+            const progressBar = document.getElementById('progress-bar');
             const funFactArea = document.getElementById('fun-fact');
             
             localStorage.removeItem(STORAGE_KEY);
+            
             funFactArea.style.height = "0";
+            progressBar.style.width = "0%";
+            progressBar.style.transition = "none";
             
             btn.disabled = false;
-            btn.innerHTML = "COMPRAR MAÍZ";
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            btnText.innerHTML = "COMPRAR MAÍZ";
+            btn.classList.remove('cursor-not-allowed');
             
             const msgArea = document.getElementById('message-area');
             msgArea.innerText = "✅ ¡Listo! Bob ya te puede atender.";
-            msgArea.className = "mt-6 p-3 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 transition-all duration-300 opacity-100";
+            msgArea.className = "mt-6 p-3 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 transition-all duration-300 opacity-100";
             setTimeout(() => msgArea.classList.add('opacity-0'), 3000);
         }
     </script>
