@@ -61,6 +61,8 @@ USE_REDIS=True
     docker compose exec web python manage.py test core
     ```
 
+> **Nota de Infraestructura:** La configuración actual de Docker Compose utiliza `python manage.py runserver` para facilitar la evaluación técnica. Para un despliegue en producción real, se recomienda sustituir este comando por un servidor WSGI robusto como **Gunicorn** o **Uvicorn** detrás de Nginx.
+
 ## 📖 Documentación
 
 Para detalles profundos sobre la arquitectura, decisiones de diseño y análisis de requerimientos, consulta el archivo [DOCUMENTATION.md](./DOCUMENTATION.md).
