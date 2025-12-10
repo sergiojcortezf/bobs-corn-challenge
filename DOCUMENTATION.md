@@ -2,7 +2,7 @@
 
 **Autor:** Sergio Cortez  
 **Rol:** Ingeniero de Software  
-**Fecha:** 9 de Diciembre, 2025
+**Fecha:** Diciembre, 2025
 
 ---
 
@@ -10,17 +10,17 @@
 
 ### 1.1 Propósito
 
-Este documento define los requisitos funcionales y no funcionales, así como la arquitectura de software para el sistema "Bob's Corn Shop". El objetivo es proveer una solución tecnológica para gestionar la venta equitativa de maíz.
+Este documento define los requisitos funcionales, no funcionales y la arquitectura de software para el sistema "Bob's Corn Shop". El objetivo es proveer una solución tecnológica escalable para gestionar la venta equitativa de maíz bajo alta demanda.
 
 ### 1.2 Alcance
 
-El sistema abarca una API RESTful para el procesamiento de compras y una interfaz de usuario web (Cliente Portal) para la interacción con el usuario final. El sistema se limita a ventas anónimas identificadas por red.
+El sistema abarca una API RESTful para el procesamiento de compras y una interfaz de usuario web (Cliente Portal). Incluye mecanismos de defensa contra abuso (Rate Limiting) y persistencia de datos.
 
 ---
 
 ## 2. Descripción General
 
-Bob requiere un mecanismo para controlar la demanda de su producto, estableciendo una política de "Fair Use" (Uso Justo) donde cada cliente solo puede adquirir una unidad de producto por minuto.
+Bob requiere un mecanismo para controlar la demanda de su producto, estableciendo una política de "Fair Use" (Uso Justo) donde cada cliente solo puede adquirir una unidad de producto por minuto, identificado por su dirección de red.
 
 ---
 
@@ -30,16 +30,16 @@ _Acciones específicas que el sistema debe ser capaz de realizar._
 
 **Módulo de Ventas (Backend)**
 
-- **RF-01 Procesamiento de Transacción:** El sistema debe permitir recibir solicitudes de compra mediante un protocolo HTTP.
-- **RF-02 Validación de Regla de Negocio (Rate Limiting):** El sistema debe validar que el origen de la solicitud (Cliente) no haya realizado una compra exitosa en los últimos 60 segundos.
-- **RF-03 Registro de Transacción:** El sistema debe persistir los datos de cada venta exitosa (Fecha, Hora, Identificador del Cliente) para fines de auditoría e inventario.
-- **RF-04 Respuesta de Bloqueo:** En caso de violar la regla de negocio (RF-02), el sistema debe rechazar la solicitud retornando un código de estado HTTP estándar para "Demasiadas Solicitudes".
+- **RF-01 Procesamiento de Transacción:** El sistema debe permitir recibir solicitudes de compra vía HTTP POST.
+- **RF-02 Validación de Regla de Negocio (Rate Limiting):** El sistema debe validar que el cliente no haya realizado una compra en los últimos 60 segundos.
+- **RF-03 Registro de Transacción:** El sistema debe persistir cada venta exitosa en base de datos relacional para auditoría.
+- **RF-04 Respuesta de Bloqueo:** En caso de violar la regla RF-02, el sistema debe rechazar la solicitud con un código HTTP `429 Too Many Requests` e incluir el tiempo de espera restante en los headers (`Retry-After`).
 
 **Módulo de Cliente (Frontend)**
 
-- **RF-05 Interfaz de Compra:** El sistema debe proveer una interfaz gráfica que permita al usuario iniciar una transacción con un solo click.
-- **RF-06 Visualización de Inventario Personal:** El sistema debe mostrar al usuario la cantidad total de unidades adquiridas exitosamente en la sesión actual.
-- **RF-07 Feedback de Estado:** El sistema debe notificar visualmente al usuario el resultado de su intento de compra (Éxito o Bloqueo Temporal).
+- **RF-05 Interfaz de Compra:** Interfaz gráfica simple que permita iniciar una transacción.
+- **RF-06 Visualización de Inventario:** Mostrar al usuario la cantidad total adquirida en tiempo real.
+- **RF-07 Feedback Visual:** Notificar visualmente el éxito o bloqueo. En caso de bloqueo, mostrar un cronómetro con el tiempo de espera restante.
 
 ---
 
@@ -47,10 +47,10 @@ _Acciones específicas que el sistema debe ser capaz de realizar._
 
 _Atributos de calidad del sistema._
 
-- **RNF-01 Usabilidad:** La interfaz de usuario debe ser intuitiva para personas sin conocimientos técnicos (Criterio: Menos de 2 clicks para realizar una compra).
-- **RNF-02 Portabilidad:** El sistema debe ser capaz de desplegarse en cualquier entorno compatible con contenedores (Docker) sin configuración manual compleja.
-- **RNF-03 Mantenibilidad:** El código debe seguir los estándares PEP-8 (Python) y principios de diseño modular para facilitar futuras integraciones (ej. Autenticación real).
-- **RNF-04 Rendimiento:** El tiempo de respuesta de la API para la validación de la compra no debe exceder los 200ms bajo carga normal.
+- **RNF-01 Usabilidad:** La interfaz debe ser intuitiva (menos de 2 clicks para comprar) y responsiva (Mobile-first).
+- **RNF-02 Portabilidad:** El sistema debe ser agnóstico al entorno, desplegable vía contenedores (Docker).
+- **RNF-03 Resiliencia:** El sistema de Rate Limit debe persistir sus datos incluso si el servidor de aplicación se reinicia.
+- **RNF-04 Mantenibilidad:** El código debe seguir principios SOLID y separar responsabilidades (Service Layer Pattern).
 
 ---
 
@@ -59,10 +59,11 @@ _Atributos de calidad del sistema._
 _Tecnologías y herramientas obligatorias para la implementación._
 
 - **Lenguaje:** Python 3.11+
-- **Framework Backend:** Django 4.x + Django REST Framework (DRF)
-- **Base de Datos:** SQLite (Entorno de Desarrollo/Prueba)
-- **Frontend:** HTML5 + JavaScript (Vanilla) + TailwindCSS (CDN)
-- **Infraestructura:** Docker & Docker Compose
+- **Framework:** Django 4.x + DRF
+- **Base de Datos:** SQLite (Relacional/Transaccional)
+- **Caché:** Redis 7 (NoSQL/Key-Value para Throttling)
+- **Frontend:** HTML5 + JS (Vanilla) + TailwindCSS
+- **Infraestructura:** Docker Compose
 
 ---
 
@@ -70,31 +71,35 @@ _Tecnologías y herramientas obligatorias para la implementación._
 
 ### 6.1 Diagrama Conceptual
 
-El sistema sigue una arquitectura monolítica modular. Django sirve tanto los recursos estáticos (HTML templates) como los endpoints de la API JSON.
+El sistema sigue una arquitectura por capas. La petición pasa por un filtro de caché antes de tocar la lógica de negocio o la base de datos principal.
 
-`Cliente (Navegador)` <--> `Proxy Inverso / Servidor Web (Django Dev Server)` <--> `Vista (DRF + Lógica)` <--> `Base de Datos (SQLite)`
+`Cliente` --> `Vista (API View)` --> **`Redis (Rate Limit Check)`** --> `Service Layer` --> `SQLite (Persistencia)`
 
 ### 6.2 Decisiones de Diseño y Justificación
 
-1.  **Identificación por IP (Throttling):**
+1.  **Rate Limiting Distribuido (Redis):**
 
-    - _Contexto:_ No existe requerimiento de Login.
-    - _Decisión:_ Se utiliza la clase `AnonRateThrottle` de DRF mapeada a la dirección IP del request.
-    - _Trade-off:_ Usuarios bajo una misma NAT compartirán el límite. Se acepta para el MVP.
+    - _Decisión:_ Uso de **Redis** como backend de caché principal.
+    - _Justificación:_ A diferencia de la memoria local, Redis permite que el estado del bloqueo persista entre reinicios del servidor y sea compartido si escalamos a múltiples instancias (workers) de Django en el futuro.
+    - _Fallback:_ Se implementó una lógica condicional (`USE_REDIS`) para permitir el desarrollo local sin dependencias fuertes.
 
-2.  **Inyección de Dependencias (Frontend):**
+2.  **Patrón Service Layer (Capa de Servicio):**
 
-    - _Decisión:_ Uso de Tailwind vía CDN.
-    - _Justificación:_ Elimina la necesidad de un paso de compilación (Build step) de Node.js, simplificando el despliegue a un solo contenedor Docker.
+    - _Decisión:_ Extracción de la lógica de negocio a `core/services.py`.
+    - _Justificación:_ Aplicación del Principio de Responsabilidad Única (SRP). La Vista (`views.py`) solo gestiona la petición HTTP y la serialización; el Servicio gestiona las reglas del negocio. Esto facilita la creación de pruebas unitarias aisladas y futuros cambios en la lógica.
 
-3.  **Manejo de Estado (Concurrencia):**
-    - _Decisión:_ Uso del sistema de Caché de Django para el conteo de tiempo.
-    - _Nota:_ En producción, el backend de caché debe configurarse con Redis para soportar múltiples instancias (workers).
+3.  **Identificación por IP:**
+
+    - _Contexto:_ No existe requerimiento de autenticación/login.
+    - _Decisión:_ Se utiliza la IP del request. Se implementó una utilidad (`utils.py`) para extraer la IP real incluso detrás de proxies (`HTTP_X_FORWARDED_FOR`).
+
+4.  **Frontend Ligero (No-Build):**
+    - _Decisión:_ Uso de Tailwind vía CDN y JS Vanilla.
+    - _Justificación:_ Elimina la complejidad de un pipeline de construcción (Webpack/Vite) para este MVP, permitiendo un despliegue monolítico simple y rápido.
 
 ---
 
 ## 7. Suposiciones y Limitaciones
 
-- Se asume que la persistencia de datos local (SQLite) es suficiente para el alcance de la prueba.
-- El sistema no maneja autenticación de usuarios; la seguridad se basa en la limitación por IP.
-- No se implementa pasarela de pagos real.
+- Se asume que SQLite es suficiente para la persistencia transaccional del MVP.
+- La seguridad se basa en IP; usuarios bajo una misma NAT (ej. oficinas) compartirán el límite de compra.

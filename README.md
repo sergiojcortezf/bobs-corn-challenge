@@ -1,28 +1,47 @@
 # 🌽 Bob's Corn Shop
 
-> Una solución Full-Stack robusta para la gestión equitativa de venta de maíz, construida con Django y Docker.
+> Una solución Full-Stack robusta para la gestión equitativa de venta de maíz, construida con Django, Docker y Redis.
 
 ## 🚀 Características Principales
 
-- **Rate Limiting Estricto:** Política de 1 compra/minuto por IP para evitar acaparamiento.
-- **Arquitectura Limpia:** Lógica de negocio encapsulada y separada de las vistas.
-- **Dockerized:** Despliegue agnóstico y rápido.
+- **Rate Limiting Distribuido:** Política estricta de 1 compra/minuto por IP, gestionada con **Redis** para persistencia y soporte en entornos distribuidos.
+- **Arquitectura por Capas:** Implementación del patrón **Service Layer** para desacoplar la lógica de negocio de las vistas (API), garantizando un código limpio y testeable.
+- **Resiliencia y Fallback:** Sistema inteligente que utiliza Redis si está disponible (Docker/Prod), pero hace fallback automático a memoria local para desarrollo simple.
+- **Dockerized:** Despliegue agnóstico y rápido con orquestación de servicios.
 - **Testing:** Cobertura de pruebas unitarias para reglas de negocio críticas.
-- **Frontend Moderno:** Interfaz reactiva con TailwindCSS y feedback visual inmediato.
+- **Frontend Moderno:** Interfaz reactiva con TailwindCSS, manejo de estados de carga y feedback visual en tiempo real (cronómetro).
 
 ## 🛠️ Stack Tecnológico
 
 - **Backend:** Python 3.11, Django 4.2, Django REST Framework.
-- **Frontend:** HTML5, JavaScript (Vanilla), TailwindCSS.
-- **Infraestructura:** Docker Compose.
-- **Docs:** OpenAPI (Swagger).
+- **Base de Datos:** SQLite (Persistencia de Transacciones).
+- **Caché:** Redis 7 (Persistencia de Rate Limit).
+- **Frontend:** HTML5, JavaScript (Vanilla), TailwindCSS via CDN.
+- **Infraestructura:** Docker & Docker Compose.
+- **Documentación:** OpenAPI 3.0 (Swagger).
+
+## ⚙️ Configuración y Variables de Entorno
+
+El proyecto está diseñado bajo la metodología "12-Factor App". Requiere un archivo `.env` en la raíz, estas son las variables soportadas:
+
+```ini
+# --- SEGURIDAD ---
+SECRET_KEY=django-insecure-tu-clave-secreta-aqui
+DEBUG=1  # Poner en 0 para producción
+ALLOWED_HOSTS=*
+
+# --- ARQUITECTURA ---
+# Controla si usamos Redis o Memoria Local para el Rate Limit.
+# Ideal para entornos CI/CD donde no se quiere levantar un servicio Redis.
+USE_REDIS=True
+```
 
 ## ⚡ Inicio Rápido
 
 1.  **Clonar y arrancar:**
 
     ```bash
-    git clone <tu-repo>
+    git clone https://github.com/sergiojcortezf/bobs-corn-challenge.git
     cd bobs-corn-challenge
     docker compose up --build
     ```
