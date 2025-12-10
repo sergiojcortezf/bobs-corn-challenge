@@ -41,16 +41,12 @@ class BuyCornView(APIView):
             ),
         ],
     )
-
     def post(self, request):
         ip = get_client_ip(request)
 
         new_total = CornService.process_purchase(ip)
 
-        return Response({
-            "message": "¡Disfruta tu maíz! 🌽",
-            "total_corn": new_total
-        })
+        return Response({"message": "¡Disfruta tu maíz! 🌽", "total_corn": new_total})
 
 
 def index(request):

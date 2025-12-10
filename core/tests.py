@@ -42,9 +42,9 @@ class BuyCornTests(TestCase):
         Prueba que la página principal carga y muestra el contador inicial.
         """
         Transaction.objects.create(client_ip="127.0.0.1")
-        
+
         response = self.client.get(reverse("home"))
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTemplateUsed(response, "core/index.html")
         self.assertEqual(response.context["initial_count"], 1)

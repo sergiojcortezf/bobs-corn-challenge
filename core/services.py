@@ -3,6 +3,7 @@ from .models import Transaction
 
 logger = logging.getLogger(__name__)
 
+
 class CornService:
     @staticmethod
     def process_purchase(client_ip: str) -> int:
@@ -14,10 +15,12 @@ class CornService:
         try:
             Transaction.objects.create(client_ip=client_ip)
             new_total = Transaction.get_count_for_ip(client_ip)
-            
-            logger.info(f"Compra exitosa para IP: {client_ip}. Total actual: {new_total}")
+
+            logger.info(
+                f"Compra exitosa para IP: {client_ip}. Total actual: {new_total}"
+            )
             return new_total
-            
+
         except Exception as e:
             logger.error(f"Error procesando compra para {client_ip}: {str(e)}")
             raise e
