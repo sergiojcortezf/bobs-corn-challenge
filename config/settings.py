@@ -74,6 +74,29 @@ DATABASES = {
     }
 }
 
+# Cache Configuration
+# Smart Setup: Use Redis if available (Docker), otherwise fallback to local memory.
+# This prevents the app from crashing in environments without Redis.
+
+USE_REDIS = os.getenv("USE_REDIS", "True") == "True"
+
+if USE_REDIS:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://redis:6379/1",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -131,15 +154,4 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API para la venta segura de maíz con Rate Limiting.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
-}
-
-# Cache Configuration using Redis
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://redis:6379/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
-    }
 }
