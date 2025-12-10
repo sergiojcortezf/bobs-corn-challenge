@@ -14,7 +14,7 @@ Este documento define los requisitos funcionales, no funcionales y la arquitectu
 
 ### 1.2 Alcance
 
-El sistema abarca una API RESTful para el procesamiento de compras y una interfaz de usuario web (Cliente Portal). Incluye mecanismos de defensa contra abuso (Rate Limiting) y persistencia de datos.
+El sistema abarca una API RESTful para el procesamiento de compras y una interfaz de usuario web (Cliente Portal) y un panel administrativo de auditoría. Incluye mecanismos de defensa contra abuso (Rate Limiting) y persistencia de datos.
 
 ---
 
@@ -51,6 +51,8 @@ _Atributos de calidad del sistema._
 - **RNF-02 Portabilidad:** El sistema debe ser agnóstico al entorno, desplegable vía contenedores (Docker).
 - **RNF-03 Resiliencia:** El sistema de Rate Limit debe persistir sus datos incluso si el servidor de aplicación se reinicia.
 - **RNF-04 Mantenibilidad:** El código debe seguir principios SOLID y separar responsabilidades (Service Layer Pattern).
+- **RNF-05 Observabilidad:** El sistema debe generar logs estructurados de cada transacción exitosa o error crítico para facilitar el monitoreo y depuración.
+- **RNF-06 Integridad Continua:** Cada cambio en el código fuente (`push`) debe disparar una batería de pruebas automatizadas en un entorno limpio para garantizar la estabilidad del sistema antes de cualquier despliegue.
 
 ---
 
@@ -94,8 +96,18 @@ El sistema sigue una arquitectura por capas. La petición pasa por un filtro de 
     - _Decisión:_ Se utiliza la IP del request. Se implementó una utilidad (`utils.py`) para extraer la IP real incluso detrás de proxies (`HTTP_X_FORWARDED_FOR`).
 
 4.  **Frontend Ligero (No-Build):**
+
     - _Decisión:_ Uso de Tailwind vía CDN y JS Vanilla.
     - _Justificación:_ Elimina la complejidad de un pipeline de construcción (Webpack/Vite) para este MVP, permitiendo un despliegue monolítico simple y rápido.
+
+5.  **Auditoría y Seguridad (Admin Panel):**
+
+    - _Decisión:_ Habilitación del Django Admin en modo _Read-Only_.
+    - _Justificación:_ Provee una interfaz inmediata para que los stakeholders (Bob) revisen las ventas sin riesgo de manipular o borrar la data histórica (Integridad de Datos).
+
+6.  **Automatización de Pruebas (CI):**
+    - _Decisión:_ Implementación de un pipeline de GitHub Actions (`.github/workflows/ci.yml`).
+    - _Justificación:_ Elimina el error humano en la verificación de calidad. Asegura que la lógica crítica (Rate Limit) y la integración de las vistas funcionen correctamente en cada iteración del desarrollo.
 
 ---
 

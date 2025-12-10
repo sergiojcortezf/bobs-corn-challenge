@@ -1,11 +1,15 @@
 # 🌽 Bob's Corn Shop
 
+![Bob's Corn CI](https://github.com/sergiojcortezf/bobs-corn-challenge/actions/workflows/ci.yml/badge.svg)
+
 > Una solución Full-Stack robusta para la gestión equitativa de venta de maíz, construida con Django, Docker y Redis.
 
 ## 🚀 Características Principales
 
 - **Rate Limiting Distribuido:** Política estricta de 1 compra/minuto por IP, gestionada con **Redis** para persistencia y soporte en entornos distribuidos.
 - **Arquitectura por Capas:** Implementación del patrón **Service Layer** para desacoplar la lógica de negocio de las vistas (API), garantizando un código limpio y testeable.
+- **Auditoría y Seguridad:** Panel de administración de solo lectura para auditar transacciones históricas.
+- **Observabilidad:** Sistema de logging detallado para monitoreo de operaciones.
 - **Resiliencia y Fallback:** Sistema inteligente que utiliza Redis si está disponible (Docker/Prod), pero hace fallback automático a memoria local para desarrollo simple.
 - **Dockerized:** Despliegue agnóstico y rápido con orquestación de servicios.
 - **Testing:** Cobertura de pruebas unitarias para reglas de negocio críticas.
@@ -18,6 +22,7 @@
 - **Caché:** Redis 7 (Persistencia de Rate Limit).
 - **Frontend:** HTML5, JavaScript (Vanilla), TailwindCSS via CDN.
 - **Infraestructura:** Docker & Docker Compose.
+- **DevOps:** GitHub Actions (CI/CD).
 - **Documentación:** OpenAPI 3.0 (Swagger).
 
 ## ⚙️ Configuración y Variables de Entorno
