@@ -21,7 +21,7 @@ class BuyCornTests(TestCase):
         response = self.client.post(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["message"], "Enjoy your corn! 🌽")
+        self.assertEqual(response.data["message"], "¡Disfruta tu maíz! 🌽")
         self.assertEqual(Transaction.objects.count(), 1)
 
     def test_rate_limit_blocking(self):

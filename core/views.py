@@ -23,7 +23,7 @@ class BuyCornView(APIView):
 
         total_corn = Transaction.get_count_for_ip(ip)
 
-        return Response({"message": "Enjoy your corn! 🌽", "total_corn": total_corn})
+        return Response({"message": "¡Disfruta tu maíz! 🌽", "total_corn": total_corn})
 
 
 def index(request):

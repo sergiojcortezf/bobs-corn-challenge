@@ -42,6 +42,8 @@
     <script>
         const CSRF_TOKEN = '{{ csrf_token }}';
 
+        const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
         async function buyCorn() {
             const btn = document.getElementById('buy-btn');
             const msgArea = document.getElementById('message-area');
@@ -50,8 +52,10 @@
 
             btn.disabled = true;
             btn.classList.add('opacity-75', 'cursor-not-allowed');
-            btn.innerHTML = 'Procesando... 🚜';
-            msgArea.className = "mt-6 text-sm font-medium min-h-[20px] opacity-0";
+            const originalBtnText = btn.innerHTML;
+            btn.innerHTML = '<span class="animate-pulse">Procesando... 🚜</span>';
+            
+            await wait(300);
 
             try {
                 const response = await fetch('/api/buy/', {
@@ -64,23 +68,29 @@
 
                 const data = await response.json();
 
-                msgArea.classList.remove('opacity-0');
+                msgArea.className = "mt-6 p-3 rounded-lg text-sm font-medium transition-all duration-300 transform scale-100";
 
                 if (response.ok) {
                     counter.innerText = data.total_corn;
                     msgArea.innerText = data.message;
-                    msgArea.className = "mt-6 p-3 bg-green-100 text-green-700 rounded-lg";
+                    msgArea.classList.add("bg-green-100", "text-green-700");
                     
                     icon.classList.add('animate-corn');
                     setTimeout(() => icon.classList.remove('animate-corn'), 300);
 
                 } else if (response.status === 429) {
-                    msgArea.innerText = "✋ ¡Alto ahí! Bob dice: Solo 1 por minuto.";
-                    msgArea.className = "mt-6 p-3 bg-red-100 text-red-700 rounded-lg border border-red-200";
+
+                    const retryAfter = response.headers.get('Retry-After');
+                    let timeLeft = retryAfter ? parseInt(retryAfter) : 60;
                     
+                    msgArea.classList.add("bg-red-100", "text-red-700", "border", "border-red-200");
+                    msgArea.innerHTML = `✋ <b>¡Alto ahí!</b> Bob está descansando.<br>Intenta de nuevo en <span id="timer" class="font-bold">${timeLeft}</span> segundos.`;
+                    
+                    startCountdown(timeLeft);
+
                 } else {
                     msgArea.innerText = "Error desconocido en la granja.";
-                    msgArea.className = "mt-6 text-red-500";
+                    msgArea.classList.add("text-red-500");
                 }
 
             } catch (error) {
@@ -90,8 +100,30 @@
             } finally {
                 btn.disabled = false;
                 btn.classList.remove('opacity-75', 'cursor-not-allowed');
-                btn.innerHTML = 'COMPRAR MAÍZ';
+                btn.innerHTML = originalBtnText;
             }
+        }
+
+        let countdownInterval;
+        function startCountdown(seconds) {
+            if (countdownInterval) clearInterval(countdownInterval);
+            
+            const timerSpan = document.getElementById('timer');
+            const btn = document.getElementById('buy-btn');
+            
+            countdownInterval = setInterval(() => {
+                seconds--;
+                if (timerSpan) timerSpan.innerText = seconds;
+
+                if (seconds <= 0) {
+                    clearInterval(countdownInterval);
+                    if (timerSpan) timerSpan.innerText = "0";
+                    
+                    const msgArea = document.getElementById('message-area');
+                    msgArea.innerHTML = "✅ ¡Ya puedes comprar otra vez!";
+                    msgArea.className = "mt-6 p-3 rounded-lg text-sm font-medium bg-blue-100 text-blue-700";
+                }
+            }, 1000);
         }
     </script>
 </body>
