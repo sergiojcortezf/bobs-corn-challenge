@@ -40,7 +40,8 @@ _Acciones específicas que el sistema debe ser capaz de realizar._
 
 - **RF-06 Interfaz de Compra:** Interfaz gráfica simple que permita iniciar una transacción.
 - **RF-07 Visualización de Inventario:** Mostrar al usuario la cantidad total adquirida en tiempo real.
-- **RF-08 Feedback Visual:** Notificar visualmente el éxito o bloqueo. En caso de bloqueo, mostrar un cronómetro con el tiempo de espera restante.
+- **RF-08 Feedback Multimodal:** El sistema debe notificar el resultado de la transacción mediante señales visuales (animaciones/mensajes) y auditivas (sonidos de éxito/error) y hápticas (vibración en móviles) para reforzar la confirmación de la acción.
+- **RF-09 Persistencia de Estado Local:** El cliente debe almacenar el tiempo de bloqueo restante en el almacenamiento local del navegador (`localStorage`) para mantener la coherencia de la UI incluso si el usuario recarga la página.
 
 ---
 
@@ -48,12 +49,13 @@ _Acciones específicas que el sistema debe ser capaz de realizar._
 
 _Atributos de calidad del sistema._
 
-- **RNF-01 Usabilidad:** La interfaz debe ser intuitiva (menos de 2 clicks para comprar) y responsiva (Mobile-first).
+- **RNF-01 Usabilidad y UX:** La interfaz debe proveer feedback inmediato (<100ms) ante interacciones del usuario (UI Reactiva) y soportar modos de visualización (Oscuro/Claro) para reducir la fatiga visual.
 - **RNF-02 Portabilidad:** El sistema debe ser agnóstico al entorno, desplegable vía contenedores (Docker).
 - **RNF-03 Resiliencia:** El sistema de Rate Limit debe persistir sus datos incluso si el servidor de aplicación se reinicia.
 - **RNF-04 Mantenibilidad:** El código debe seguir principios SOLID y separar responsabilidades (Service Layer Pattern).
 - **RNF-05 Observabilidad:** El sistema debe generar logs estructurados de cada transacción exitosa o error crítico para facilitar el monitoreo y depuración.
 - **RNF-06 Integridad Continua:** Cada cambio en el código fuente (`push`) debe disparar una batería de pruebas automatizadas en un entorno limpio para garantizar la estabilidad del sistema antes de cualquier despliegue.
+- **RNF-07 Accesibilidad (A11y):** La aplicación debe ser navegable y comprensible utilizando tecnologías de asistencia, empleando atributos ARIA correctos (`aria-live`) y contrastes de color adecuados.
 
 ---
 
@@ -107,8 +109,14 @@ El sistema sigue una arquitectura por capas. La petición pasa por un filtro de 
     - _Justificación:_ Provee una interfaz inmediata para que los stakeholders (Bob) revisen las ventas sin riesgo de manipular o borrar la data histórica (Integridad de Datos).
 
 6.  **Automatización de Pruebas (CI):**
+
     - _Decisión:_ Implementación de un pipeline de GitHub Actions (`.github/workflows/ci.yml`).
     - _Justificación:_ Elimina el error humano en la verificación de calidad. Asegura que la lógica crítica (Rate Limit) y la integración de las vistas funcionen correctamente en cada iteración del desarrollo.
+
+7.  **UX Defensiva y Persistencia:**
+
+    - _Decisión:_ Implementación de bloqueo preventivo en el cliente sincronizado vía `localStorage`.
+    - _Justificación:_ Reduce la carga innecesaria al servidor (evitando peticiones que sabemos fallarán) y mejora la experiencia del usuario evitando la frustración de perder el estado del contador al recargar.
 
 ---
 

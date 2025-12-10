@@ -7,13 +7,17 @@
 ## 🚀 Características Principales
 
 - **Rate Limiting Distribuido:** Política estricta de 1 compra/minuto por IP, gestionada con **Redis** para persistencia y soporte en entornos distribuidos.
-- **Arquitectura por Capas:** Implementación del patrón **Service Layer** para desacoplar la lógica de negocio de las vistas (API), garantizando un código limpio y testeable.
-- **Auditoría y Seguridad:** Panel de administración de solo lectura para auditar transacciones históricas.
-- **Observabilidad:** Sistema de logging detallado para monitoreo de operaciones.
-- **Resiliencia y Fallback:** Sistema inteligente que utiliza Redis si está disponible (Docker/Prod), pero hace fallback automático a memoria local para desarrollo simple.
-- **Dockerized:** Despliegue agnóstico y rápido con orquestación de servicios.
-- **Testing:** Cobertura de pruebas unitarias para reglas de negocio críticas.
-- **Frontend Moderno:** Interfaz reactiva con TailwindCSS, manejo de estados de carga y feedback visual en tiempo real (cronómetro).
+- **Arquitectura por Capas:** Implementación del patrón **Service Layer** para desacoplar la lógica de negocio de las vistas (API).
+- **Experiencia de Usuario (UX) Premium:**
+  - 🌓 **Modo Oscuro/Claro:** Detección automática y toggle manual.
+  - 📴 **Soporte Offline:** Detección de estado de red con feedback visual inmediato.
+  - 🔊 **Feedback Multimodal:** Respuesta visual (confeti), auditiva (sonidos) y háptica (vibración).
+  - 💾 **Persistencia Local:** El estado del temporizador sobrevive a recargas de página (`localStorage`).
+- **Auditoría y Seguridad:** Panel de administración _Read-Only_ para auditar transacciones históricas.
+- **Observabilidad:** Sistema de logging detallado y Health Checks profundos (DB + Cache) para monitoreo.
+- **Resiliencia y Fallback:** Sistema inteligente que utiliza Redis si está disponible (Docker/Prod), con fallback automático a memoria local.
+- **Infraestructura Sólida:** - 🐳 **Dockerized:** Despliegue agnóstico y rápido con orquestación de servicios.
+  - 🧪 **Calidad y CI/CD:** Pipeline de GitHub Actions con tests de integración y unitarios automatizados.
 
 ## 🛠️ Stack Tecnológico
 
