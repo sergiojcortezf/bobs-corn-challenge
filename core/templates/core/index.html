@@ -12,16 +12,17 @@
             50% { transform: translateY(-10px); }
         }
         .animate-corn { animation: bounce-short 0.3s ease-in-out; }
+        body { transition: background-color 0.3s, color 0.3s; }
     </style>
 </head>
-<body class="bg-amber-50 min-h-screen flex items-center justify-center font-sans p-4">
+<body class="bg-amber-50 min-h-screen flex items-center justify-center font-sans p-4 transition-colors duration-300">
 
-    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border-t-8 border-yellow-400">
+    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border-t-8 border-yellow-400 transition-colors duration-300">
         
         <h1 class="text-3xl font-bold text-gray-800 mb-2">Bob's Corn Shop</h1>
-        <p class="text-gray-500 mb-8">Política estricta: 1 maíz por minuto.</p>
+        <p class="text-gray-500 mb-8" id="subtitle">Política estricta: 1 maíz por minuto.</p>
 
-        <div class="bg-yellow-100 rounded-lg p-6 mb-8">
+        <div class="bg-yellow-100 rounded-lg p-6 mb-8 transition-colors duration-300">
             <div class="text-6xl mb-2" id="corn-icon">🌽</div>
             <p class="text-gray-600 font-medium">Has comprado:</p>
             <p class="text-4xl font-extrabold text-yellow-800 tabular-nums" id="counter" aria-live="polite">
@@ -29,7 +30,7 @@
             </p>
         </div>
 
-        <button onclick="buyCorn()" id="buy-btn" 
+        <button onclick="handleBuyClick()" id="buy-btn" 
             class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-6 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex justify-center items-center gap-2 min-h-[60px]">
             <span>COMPRAR MAÍZ</span>
         </button>
@@ -44,24 +45,56 @@
 
     <script>
         const CSRF_TOKEN = '{{ csrf_token }}';
-        const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-        let isRateLimited = false;
+        const STORAGE_KEY = 'bobs_corn_lock_until';
 
-        async function buyCorn() {
-            if (isRateLimited) return;
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLocalLock();
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+        });
 
+        function checkLocalLock() {
+            const lockUntil = localStorage.getItem(STORAGE_KEY);
+            if (lockUntil) {
+                const now = Date.now();
+                const remaining = Math.ceil((parseInt(lockUntil) - now) / 1000);
+                
+                if (remaining > 0) {
+                    startCountdown(remaining);
+                } else {
+                    localStorage.removeItem(STORAGE_KEY);
+                }
+            }
+        }
+
+        function updateOnlineStatus() {
             const btn = document.getElementById('buy-btn');
-            const msgArea = document.getElementById('message-area');
+            if (navigator.onLine) {
+                btn.disabled = false;
+                btn.innerHTML = "COMPRAR MAÍZ";
+                btn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-400');
+                btn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+            } else {
+                btn.disabled = true;
+                btn.innerHTML = "🚜 Sin señal en el campo...";
+                btn.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-400');
+                btn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+            }
+        }
+
+        async function handleBuyClick() {
+            const btn = document.getElementById('buy-btn');
             const counter = document.getElementById('counter');
             const icon = document.getElementById('corn-icon');
+            const msgArea = document.getElementById('message-area');
 
-            // UI Loading
-            btn.disabled = true;
-            btn.classList.add('opacity-75', 'cursor-not-allowed');
-            const originalBtnText = "COMPRAR MAÍZ"; // Guardamos texto base limpio
-            btn.innerHTML = '<span class="animate-pulse">Procesando... 🚜</span>';
+            const previousCount = parseInt(counter.innerText);
+
+            counter.innerText = previousCount + 1;
+            icon.classList.add('animate-corn');
+            setTimeout(() => icon.classList.remove('animate-corn'), 300);
             
-            await wait(300);
+            startCountdown(60); 
 
             try {
                 const response = await fetch('/api/buy/', {
@@ -74,93 +107,83 @@
 
                 const data = await response.json();
 
-                msgArea.className = "mt-6 p-3 rounded-lg text-sm font-medium transition-all duration-300 transform scale-100";
-                msgArea.classList.remove('opacity-0');
-
                 if (response.ok) {
-                    // ÉXITO
                     counter.innerText = data.total_corn;
-                    msgArea.innerText = data.message;
-                    msgArea.classList.add("bg-green-100", "text-green-700");
-                    msgArea.classList.remove("bg-red-100", "text-red-700", "border-red-200");
+                    showMessage(data.message, "success");
                     
-                    icon.classList.add('animate-corn');
-                    setTimeout(() => icon.classList.remove('animate-corn'), 300);
-
-                    // MEJORA UX: Bloqueo Preventivo Inmediato (60s)
-                    // No esperamos a que el usuario falle, le avisamos que debe esperar.
-                    startCountdown(60, btn, originalBtnText);
+                    const lockTime = Date.now() + (60 * 1000);
+                    localStorage.setItem(STORAGE_KEY, lockTime);
 
                 } else if (response.status === 429) {
-                    // ERROR 429 (Por si el preventivo falló o recargaron la página)
-                    isRateLimited = true;
+                    counter.innerText = previousCount;
+                    
                     const retryAfter = response.headers.get('Retry-After');
                     let timeLeft = retryAfter ? parseInt(retryAfter) : 60;
                     
-                    msgArea.classList.add("bg-red-100", "text-red-700", "border", "border-red-200");
-                    msgArea.classList.remove("bg-green-100", "text-green-700");
-                    msgArea.innerHTML = "✋ <b>¡Alto ahí!</b> Bob está descansando.";
+                    localStorage.setItem(STORAGE_KEY, Date.now() + (timeLeft * 1000));
+                    startCountdown(timeLeft);
                     
-                    startCountdown(timeLeft, btn, originalBtnText);
+                    showMessage("✋ ¡Alto ahí! Bob está descansando.", "error");
 
                 } else {
-                    msgArea.innerText = "Error desconocido en la granja.";
-                    msgArea.classList.add("text-red-500");
+                    throw new Error("Error desconocido");
                 }
 
             } catch (error) {
                 console.error(error);
-                msgArea.innerText = "Error de conexión con el servidor.";
-                msgArea.className = "mt-6 text-red-500 opacity-100";
-                // Restaurar botón si hubo error de red
-                btn.disabled = false;
-                btn.classList.remove('opacity-75', 'cursor-not-allowed');
-                btn.innerHTML = originalBtnText;
+                counter.innerText = previousCount;
+                stopCountdown();
+                showMessage("Error de conexión. Intenta de nuevo.", "error");
+            }
+        }
+
+        // --- 3. UI Helpers ---
+        function showMessage(text, type) {
+            const msgArea = document.getElementById('message-area');
+            msgArea.innerHTML = text;
+            msgArea.classList.remove('opacity-0', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700', 'border', 'border-red-200');
+            
+            if (type === 'success') {
+                msgArea.classList.add('bg-green-100', 'text-green-700', 'p-3', 'rounded-lg');
+            } else {
+                msgArea.classList.add('bg-red-100', 'text-red-700', 'border', 'border-red-200', 'p-3', 'rounded-lg');
             }
         }
 
         let countdownInterval;
-        
-        function startCountdown(seconds, btn, originalText) {
-            // Limpieza previa
+        function startCountdown(seconds) {
+            const btn = document.getElementById('buy-btn');
+            
             if (countdownInterval) clearInterval(countdownInterval);
-            isRateLimited = true;
-
-            // Estado deshabilitado
+            
             btn.disabled = true;
             btn.classList.add('opacity-50', 'cursor-not-allowed');
             
-            // Render inicial (Fix: Espacio agregado y tabular-nums para evitar temblor)
-            const updateButtonText = (sec) => {
-                btn.innerHTML = `⏳ Espera <span class="tabular-nums font-mono font-bold">${sec}</span> s`;
-            };
-            
-            updateButtonText(seconds);
-            
+            const updateText = (s) => btn.innerHTML = `⏳ Espera <span class="tabular-nums font-mono font-bold">${s}</span> segundos...`;
+            updateText(seconds);
+
             countdownInterval = setInterval(() => {
                 seconds--;
-                updateButtonText(seconds);
+                updateText(seconds);
 
                 if (seconds <= 0) {
-                    clearInterval(countdownInterval);
-                    isRateLimited = false;
-
-                    // Reactivar botón
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-50', 'cursor-not-allowed', 'opacity-75');
-                    btn.innerHTML = originalText;
-                    
-                    // Feedback positivo discreto
-                    const msgArea = document.getElementById('message-area');
-                    msgArea.innerText = "✅ ¡Listo! Bob ya te puede atender.";
-                    msgArea.className = "mt-6 p-3 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 transition-all duration-300 opacity-100";
-                    
-                    // Ocultar mensaje después de unos segundos
-                    setTimeout(() => {
-                         msgArea.classList.add('opacity-0');
-                    }, 3000);
+                    stopCountdown();
                 }
             }, 1000);
+        }
+
+        function stopCountdown() {
+            clearInterval(countdownInterval);
+            const btn = document.getElementById('buy-btn');
+            localStorage.removeItem(STORAGE_KEY);
+            
+            btn.disabled = false;
+            btn.innerHTML = "COMPRAR MAÍZ";
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            const msgArea = document.getElementById('message-area');
+            msgArea.innerText = "✅ ¡Listo! Bob ya te puede atender.";
+            setTimeout(() => msgArea.classList.add('opacity-0'), 3000);
         }
     </script>
 </body>
