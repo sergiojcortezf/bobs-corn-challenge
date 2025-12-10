@@ -34,6 +34,6 @@ jobs:
           SECRET_KEY: "secret-key-for-tests"
           DEBUG: "1"
           ALLOWED_HOSTS: "*"
-          USE_REDIS: "False"
+          USE_REDIS: "True"
         run: |
           python manage.py test core
