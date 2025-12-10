@@ -1,5 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpRequest, HttpResponse
+from django.db import connections
+from django.core.cache import cache
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.request import Request
@@ -9,6 +11,7 @@ from drf_spectacular.types import OpenApiTypes
 from .throttles import CornRateThrottle
 from .utils import get_client_ip
 from .services import CornService
+
 
 
 class BuyCornView(APIView):
@@ -59,9 +62,31 @@ class HealthCheckView(APIView):
     authentication_classes = []
     permission_classes = []
 
-    @extend_schema(exclude=True)
+    # @extend_schema(exclude=True)
     def get(self, request: Request) -> Response:
-        return Response({"status": "ok", "service": "bobs-corn-shop"})
+        health_status = {"status": "ok", "components": {}}
+        
+        # 1. Verificar DB
+        try:
+            connections['default'].cursor()
+            health_status["components"]["db"] = "healthy"
+        except Exception:
+            health_status["components"]["db"] = "unhealthy"
+            health_status["status"] = "error"
+
+        # 2. Verificar Caché (Redis)
+        try:
+            cache.set("health_check", "ok", 1)
+            if cache.get("health_check") == "ok":
+                health_status["components"]["cache"] = "healthy"
+            else:
+                raise Exception("Cache write failed")
+        except Exception:
+            health_status["components"]["cache"] = "unhealthy"
+            health_status["status"] = "error"
+
+        status_code = 200 if health_status["status"] == "ok" else 503
+        return Response(health_status, status=status_code)
 
 
 def index(request: HttpRequest) -> HttpResponse:
