@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.http import HttpRequest, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.request import Request
@@ -50,7 +51,20 @@ class BuyCornView(APIView):
         return Response({"message": "¡Disfruta tu maíz! 🌽", "total_corn": new_total})
 
 
-def index(request):
+class HealthCheckView(APIView):
+    """
+    Endpoint simple para verificar que el servicio está arriba.
+    """
+
+    authentication_classes = []
+    permission_classes = []
+
+    @extend_schema(exclude=True)
+    def get(self, request: Request) -> Response:
+        return Response({"status": "ok", "service": "bobs-corn-shop"})
+
+
+def index(request: HttpRequest) -> HttpResponse:
     """
     Vista que renderiza el frontend e inyecta el contador inicial.
     """
