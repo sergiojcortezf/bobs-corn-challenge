@@ -1,11 +1,12 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Transaction
-from .throttles import CornRateThrottle
-from .utils import get_client_ip
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
+
+from .throttles import CornRateThrottle
+from .utils import get_client_ip
+from .services import CornService
 
 
 class BuyCornView(APIView):
@@ -40,17 +41,16 @@ class BuyCornView(APIView):
             ),
         ],
     )
-    
-    def post(self, request):
 
+    def post(self, request):
         ip = get_client_ip(request)
 
-        # Lógica de negocio
-        Transaction.objects.create(client_ip=ip)
+        new_total = CornService.process_purchase(ip)
 
-        total_corn = Transaction.get_count_for_ip(ip)
-
-        return Response({"message": "¡Disfruta tu maíz! 🌽", "total_corn": total_corn})
+        return Response({
+            "message": "¡Disfruta tu maíz! 🌽",
+            "total_corn": new_total
+        })
 
 
 def index(request):
