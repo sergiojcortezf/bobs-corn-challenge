@@ -34,12 +34,13 @@ _Acciones específicas que el sistema debe ser capaz de realizar._
 - **RF-02 Validación de Regla de Negocio (Rate Limiting):** El sistema debe validar que el cliente no haya realizado una compra en los últimos 60 segundos.
 - **RF-03 Registro de Transacción:** El sistema debe persistir cada venta exitosa en base de datos relacional para auditoría.
 - **RF-04 Respuesta de Bloqueo:** En caso de violar la regla RF-02, el sistema debe rechazar la solicitud con un código HTTP `429 Too Many Requests` e incluir el tiempo de espera restante en los headers (`Retry-After`).
+- **RF-05 Monitoreo de Salud:** El sistema debe exponer un endpoint público (`/health/`) que responda con un estado `200 OK` y metadatos básicos para permitir verificaciones de disponibilidad (Health Checks) por orquestadores como Kubernetes o AWS Load Balancers.
 
 **Módulo de Cliente (Frontend)**
 
-- **RF-05 Interfaz de Compra:** Interfaz gráfica simple que permita iniciar una transacción.
-- **RF-06 Visualización de Inventario:** Mostrar al usuario la cantidad total adquirida en tiempo real.
-- **RF-07 Feedback Visual:** Notificar visualmente el éxito o bloqueo. En caso de bloqueo, mostrar un cronómetro con el tiempo de espera restante.
+- **RF-06 Interfaz de Compra:** Interfaz gráfica simple que permita iniciar una transacción.
+- **RF-07 Visualización de Inventario:** Mostrar al usuario la cantidad total adquirida en tiempo real.
+- **RF-08 Feedback Visual:** Notificar visualmente el éxito o bloqueo. En caso de bloqueo, mostrar un cronómetro con el tiempo de espera restante.
 
 ---
 
