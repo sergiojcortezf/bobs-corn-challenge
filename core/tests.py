@@ -48,3 +48,16 @@ class BuyCornTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTemplateUsed(response, "core/index.html")
         self.assertEqual(response.context["initial_count"], 1)
+
+    def test_health_check(self):
+        """
+        Verifica que el endpoint de salud responda y que los servicios
+        dependientes (DB, Cache) estén operativos.
+        """
+        url = reverse("health-check")
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "ok")
+        self.assertEqual(response.data["components"]["db"], "healthy")
+        self.assertEqual(response.data["components"]["cache"], "healthy")
