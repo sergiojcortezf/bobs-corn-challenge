@@ -44,7 +44,7 @@
                 <p class="text-gray-600 dark:text-gray-300 font-medium" id="label-text">Has comprado:</p>
             {% endif %}
             
-            <p class="text-4xl font-extrabold text-yellow-800 dark:text-yellow-400 tabular-nums mt-1" id="counter">
+            <p class="text-4xl font-extrabold text-yellow-800 dark:text-yellow-400 tabular-nums mt-1" id="counter" aria-live="polite">
                 {{ initial_count }}
             </p>
         </div>
@@ -57,7 +57,7 @@
             <div id="progress-bar" class="absolute top-0 left-0 h-full bg-gray-600/50 z-10 w-0 transition-none pointer-events-none rounded-xl"></div>
         </div>
 
-        <div id="message-area" class="mt-6 text-sm font-medium min-h-[20px] transition-all duration-300 opacity-0 dark:text-gray-200">
+        <div id="message-area" aria-live="assertive" class="mt-6 text-sm font-medium min-h-[20px] transition-all duration-300 opacity-0 dark:text-gray-200">
         </div>
         
         <div id="fun-fact" class="mt-4 text-xs text-gray-500 dark:text-gray-400 italic h-0 overflow-hidden transition-all duration-500">
