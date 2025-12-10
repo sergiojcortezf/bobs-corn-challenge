@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from .models import Transaction
 from .throttles import CornRateThrottle
 from .utils import get_client_ip
+from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.types import OpenApiTypes
 
 
 class BuyCornView(APIView):
@@ -14,6 +16,31 @@ class BuyCornView(APIView):
 
     throttle_classes = [CornRateThrottle]
 
+    @extend_schema(
+        summary="Comprar Maíz 🌽",
+        description="Endpoint principal para registrar una compra. Identifica al usuario por IP y aplica un límite estricto de 1 compra por minuto.",
+        responses={
+            200: OpenApiTypes.OBJECT,
+            429: OpenApiTypes.OBJECT,
+        },
+        examples=[
+            OpenApiExample(
+                "Compra Exitosa",
+                value={"message": "¡Disfruta tu maíz! 🌽", "total_corn": 42},
+                response_only=True,
+                status_codes=[200],
+            ),
+            OpenApiExample(
+                "Bloqueo por Rate Limit",
+                value={
+                    "detail": "Request was throttled. Expected available in 60 seconds."
+                },
+                response_only=True,
+                status_codes=[429],
+            ),
+        ],
+    )
+    
     def post(self, request):
 
         ip = get_client_ip(request)
