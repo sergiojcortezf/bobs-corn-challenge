@@ -9,5 +9,12 @@ class CornService:
         2. Retorna el nuevo total de maíz del cliente.
         """
         Transaction.objects.create(client_ip=client_ip)
-        
+
+        return Transaction.get_count_for_ip(client_ip)
+
+    @staticmethod
+    def get_corn_count(client_ip: str) -> int:
+        """
+        Simplemente consulta el saldo actual sin comprar nada.
+        """
         return Transaction.get_count_for_ip(client_ip)

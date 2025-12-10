@@ -59,7 +59,6 @@ def index(request):
     """
     ip = get_client_ip(request)
 
-    initial_count = Transaction.get_count_for_ip(ip)
+    initial_count = CornService.get_corn_count(ip)
 
-    # 3. Pasar el dato al HTML
     return render(request, "core/index.html", {"initial_count": initial_count})
