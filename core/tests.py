@@ -5,10 +5,11 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from .models import Transaction
 
+
 class BuyCornTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.url = reverse('buy-corn')
+        self.url = reverse("buy-corn")
 
     def tearDown(self):
         cache.clear()
@@ -18,9 +19,9 @@ class BuyCornTests(TestCase):
         Prueba que un usuario puede comprar una mazorca exitosamente.
         """
         response = self.client.post(self.url)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], "Enjoy your corn! 🌽")
+        self.assertEqual(response.data["message"], "Enjoy your corn! 🌽")
         self.assertEqual(Transaction.objects.count(), 1)
 
     def test_rate_limit_blocking(self):
@@ -33,5 +34,5 @@ class BuyCornTests(TestCase):
 
         response2 = self.client.post(self.url)
         self.assertEqual(response2.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
-        
+
         self.assertEqual(Transaction.objects.count(), 1)

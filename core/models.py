@@ -1,11 +1,13 @@
 from django.db import models
 import uuid
 
+
 class Transaction(models.Model):
     """
     Registra cada compra exitosa de maíz.
     Sirve para auditoría y para contar cuánto ha comprado un cliente.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     client_ip = models.GenericIPAddressField(db_index=True)
     amount = models.PositiveIntegerField(default=1)
@@ -19,4 +21,4 @@ class Transaction(models.Model):
         return f"{self.client_ip} - {self.created_at}"
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
