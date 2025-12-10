@@ -14,3 +14,8 @@ class TransactionAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+admin.site.site_header = "Bob's Corn Shop Administration"
+admin.site.site_title = "Bob's Corn Portal"
+admin.site.index_title = "Bienvenido al Panel de Auditoría"
