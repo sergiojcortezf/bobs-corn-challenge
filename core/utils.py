@@ -1,4 +1,7 @@
-def get_client_ip(request):
+from django.http import HttpRequest
+
+
+def get_client_ip(request: HttpRequest) -> str | None:
     """
     Extrae la dirección IP del cliente de la solicitud HTTP.
     Soporta proxies mediante el encabezado X-Forwarded-For.
