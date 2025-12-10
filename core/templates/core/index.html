@@ -24,16 +24,18 @@
         <div class="bg-yellow-100 rounded-lg p-6 mb-8">
             <div class="text-6xl mb-2" id="corn-icon">🌽</div>
             <p class="text-gray-600 font-medium">Has comprado:</p>
-            <p class="text-4xl font-extrabold text-yellow-600" id="counter">{{ initial_count }}</p>
+            <p class="text-4xl font-extrabold text-yellow-800 tabular-nums" id="counter" aria-live="polite">
+                {{ initial_count }}
+            </p>
         </div>
 
         <button onclick="buyCorn()" id="buy-btn" 
-            class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-6 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex justify-center items-center gap-2">
+            class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-6 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex justify-center items-center gap-2 min-h-[60px]">
             <span>COMPRAR MAÍZ</span>
         </button>
 
-        <div id="message-area" class="mt-6 text-sm font-medium min-h-[20px] transition-all duration-300 opacity-0">
-            </div>
+        <div id="message-area" aria-live="assertive" class="mt-6 text-sm font-medium min-h-[20px] transition-all duration-300 opacity-0">
+        </div>
 
         <div class="mt-8 text-xs text-gray-400">
             Backend: Django REST Framework | Frontend: Tailwind + JS
@@ -53,9 +55,10 @@
             const counter = document.getElementById('counter');
             const icon = document.getElementById('corn-icon');
 
+            // UI Loading
             btn.disabled = true;
             btn.classList.add('opacity-75', 'cursor-not-allowed');
-            const originalBtnText = btn.innerHTML;
+            const originalBtnText = "COMPRAR MAÍZ"; // Guardamos texto base limpio
             btn.innerHTML = '<span class="animate-pulse">Procesando... 🚜</span>';
             
             await wait(300);
@@ -72,25 +75,34 @@
                 const data = await response.json();
 
                 msgArea.className = "mt-6 p-3 rounded-lg text-sm font-medium transition-all duration-300 transform scale-100";
+                msgArea.classList.remove('opacity-0');
 
                 if (response.ok) {
+                    // ÉXITO
                     counter.innerText = data.total_corn;
                     msgArea.innerText = data.message;
                     msgArea.classList.add("bg-green-100", "text-green-700");
+                    msgArea.classList.remove("bg-red-100", "text-red-700", "border-red-200");
                     
                     icon.classList.add('animate-corn');
                     setTimeout(() => icon.classList.remove('animate-corn'), 300);
 
-                } else if (response.status === 429) {
-                    isRateLimited = true;
+                    // MEJORA UX: Bloqueo Preventivo Inmediato (60s)
+                    // No esperamos a que el usuario falle, le avisamos que debe esperar.
+                    startCountdown(60, btn, originalBtnText);
 
+                } else if (response.status === 429) {
+                    // ERROR 429 (Por si el preventivo falló o recargaron la página)
+                    isRateLimited = true;
                     const retryAfter = response.headers.get('Retry-After');
                     let timeLeft = retryAfter ? parseInt(retryAfter) : 60;
                     
                     msgArea.classList.add("bg-red-100", "text-red-700", "border", "border-red-200");
+                    msgArea.classList.remove("bg-green-100", "text-green-700");
                     msgArea.innerHTML = "✋ <b>¡Alto ahí!</b> Bob está descansando.";
                     
                     startCountdown(timeLeft, btn, originalBtnText);
+
                 } else {
                     msgArea.innerText = "Error desconocido en la granja.";
                     msgArea.classList.add("text-red-500");
@@ -99,43 +111,54 @@
             } catch (error) {
                 console.error(error);
                 msgArea.innerText = "Error de conexión con el servidor.";
-                msgArea.className = "mt-6 text-red-500";
-            } finally {
-                if (!isRateLimited) {
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-75', 'cursor-not-allowed');
-                    btn.innerHTML = "COMPRAR MAÍZ";
-                }
+                msgArea.className = "mt-6 text-red-500 opacity-100";
+                // Restaurar botón si hubo error de red
+                btn.disabled = false;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                btn.innerHTML = originalBtnText;
             }
         }
 
         let countdownInterval;
+        
         function startCountdown(seconds, btn, originalText) {
+            // Limpieza previa
             if (countdownInterval) clearInterval(countdownInterval);
+            isRateLimited = true;
 
+            // Estado deshabilitado
             btn.disabled = true;
             btn.classList.add('opacity-50', 'cursor-not-allowed');
-            btn.innerHTML = `Espera <span id="btn-timer">${seconds}</span>segundos`;
+            
+            // Render inicial (Fix: Espacio agregado y tabular-nums para evitar temblor)
+            const updateButtonText = (sec) => {
+                btn.innerHTML = `⏳ Espera <span class="tabular-nums font-mono font-bold">${sec}</span> s`;
+            };
+            
+            updateButtonText(seconds);
             
             countdownInterval = setInterval(() => {
                 seconds--;
-
-                const timerSpan = document.getElementById('timer');
-                const btnTimer = document.getElementById('btn-timer');
-                if (timerSpan) timerSpan.innerText = seconds;
-                if (btnTimer) btnTimer.innerText = seconds;
+                updateButtonText(seconds);
 
                 if (seconds <= 0) {
                     clearInterval(countdownInterval);
                     isRateLimited = false;
 
+                    // Reactivar botón
                     btn.disabled = false;
                     btn.classList.remove('opacity-50', 'cursor-not-allowed', 'opacity-75');
-                    btn.innerHTML = originalText || "COMPRAR MAÍZ";
+                    btn.innerHTML = originalText;
                     
+                    // Feedback positivo discreto
                     const msgArea = document.getElementById('message-area');
-                    msgArea.innerHTML = "✅ ¡Listo! Bob ya te puede atender.";
-                    msgArea.className = "mt-6 p-3 rounded-lg text-sm font-medium bg-blue-100 text-blue-700";
+                    msgArea.innerText = "✅ ¡Listo! Bob ya te puede atender.";
+                    msgArea.className = "mt-6 p-3 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 transition-all duration-300 opacity-100";
+                    
+                    // Ocultar mensaje después de unos segundos
+                    setTimeout(() => {
+                         msgArea.classList.add('opacity-0');
+                    }, 3000);
                 }
             }, 1000);
         }
