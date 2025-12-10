@@ -16,14 +16,19 @@
             50% { transform: translateY(-10px); }
         }
         .animate-corn { animation: bounce-short 0.3s ease-in-out; }
-        body, div, p, h1, button { transition: all 0.3s ease; }
+        body, div, p, h1, button, span { transition: all 0.3s ease; }
     </style>
 </head>
 <body class="bg-amber-50 dark:bg-slate-900 min-h-screen flex items-center justify-center font-sans p-4 transition-colors duration-300">
 
-    <button onclick="toggleDarkMode()" class="absolute top-4 right-4 p-3 rounded-full bg-white dark:bg-slate-800 shadow-lg text-xl hover:scale-110 transition-transform">
-        <span id="dark-icon">🌙</span>
-    </button>
+    <div class="absolute top-4 right-4 flex gap-2">
+        <button onclick="toggleSound()" class="p-3 rounded-full bg-white dark:bg-slate-800 shadow-lg text-xl hover:scale-110 transition-transform" title="Activar/Desactivar Sonido">
+            <span id="sound-icon">🔊</span>
+        </button>
+        <button onclick="toggleDarkMode()" class="p-3 rounded-full bg-white dark:bg-slate-800 shadow-lg text-xl hover:scale-110 transition-transform" title="Cambiar Tema">
+            <span id="dark-icon">🌙</span>
+        </button>
+    </div>
 
     <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl max-w-md w-full text-center border-t-8 border-yellow-400 dark:border-yellow-600 transition-colors duration-300 relative overflow-hidden">
         
@@ -87,12 +92,14 @@
                 document.documentElement.classList.add('dark');
                 document.getElementById('dark-icon').innerText = '☀️';
             }
+            if (localStorage.getItem('sound') === 'muted') {
+                document.getElementById('sound-icon').innerText = '🔇';
+            }
         });
 
         function toggleDarkMode() {
             const html = document.documentElement;
             const icon = document.getElementById('dark-icon');
-            
             if (html.classList.contains('dark')) {
                 html.classList.remove('dark');
                 localStorage.setItem('theme', 'light');
@@ -104,25 +111,30 @@
             }
         }
 
+        function toggleSound() {
+            const icon = document.getElementById('sound-icon');
+            if (icon.innerText === '🔊') {
+                icon.innerText = '🔇';
+                localStorage.setItem('sound', 'muted');
+            } else {
+                icon.innerText = '🔊';
+                localStorage.setItem('sound', 'on');
+            }
+        }
+
         async function handleBuyClick() {
             const btn = document.getElementById('buy-btn');
+            const btnText = document.getElementById('btn-text');
             const counter = document.getElementById('counter');
             const icon = document.getElementById('corn-icon');
             const labelText = document.getElementById('label-text');
-            const previousCount = parseInt(counter.innerText) || 0;
 
-            counter.innerText = previousCount + 1;
-            labelText.innerText = "Has comprado:";
+            btn.disabled = true;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            const originalText = btnText.innerHTML;
+            btnText.innerHTML = '<span class="animate-pulse">Procesando... 🚜</span>';
             
-            icon.classList.add('animate-corn');
-            playSound('success');
-            if (navigator.vibrate) navigator.vibrate(50);
-            
-            confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ['#EAB308', '#ffffff'] });
-
-            setTimeout(() => icon.classList.remove('animate-corn'), 300);
-            
-            startCountdown(60); 
+            if (navigator.vibrate) navigator.vibrate(20);
 
             try {
                 const response = await fetch('/api/buy/', {
@@ -133,10 +145,23 @@
 
                 if (response.ok) {
                     counter.innerText = data.total_corn;
+                    labelText.innerText = "Has comprado:";
+                    counter.classList.remove('text-lg');
+                    counter.classList.add('text-4xl');
+                    
                     showMessage(data.message, "success");
                     localStorage.setItem(STORAGE_KEY, Date.now() + (60 * 1000));
+                    
+                    icon.classList.add('animate-corn');
+                    playSound('success');
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    
+                    confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ['#EAB308', '#ffffff'] });
+                    setTimeout(() => icon.classList.remove('animate-corn'), 300);
+
+                    startCountdown(60); 
+
                 } else if (response.status === 429) {
-                    counter.innerText = previousCount;
                     playSound('error');
                     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
                     
@@ -151,18 +176,21 @@
                 }
             } catch (error) {
                 console.error(error);
-                counter.innerText = previousCount;
-                stopCountdown();
+                btn.disabled = false;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                btnText.innerHTML = "COMPRAR MAÍZ";
                 showMessage("Error de conexión.", "error");
             }
         }
 
         function playSound(type) {
+            if (localStorage.getItem('sound') === 'muted') return;
+
             const sound = document.getElementById(type === 'success' ? 'sound-success' : 'sound-error');
             if(sound) {
                 sound.volume = 0.4;
                 sound.currentTime = 0;
-                sound.play().catch(e => console.log("Audio play failed (user interaction needed)"));
+                sound.play().catch(e => console.warn("Audio play blocked by browser (user interaction needed)"));
             }
         }
 
@@ -208,7 +236,7 @@
             
             if (countdownInterval) clearInterval(countdownInterval);
             
-            funFactArea.innerText = "🌽 " + FUN_FACTS[Math.floor(Math.random() * FUN_FACTS.length)];
+            funFactArea.innerText = "🌽 Dato Curioso: " + FUN_FACTS[Math.floor(Math.random() * FUN_FACTS.length)];
             funFactArea.style.height = "auto";
             
             btn.disabled = true;
@@ -217,8 +245,7 @@
             const totalTime = 60;
             
             const updateUI = (currentSec) => {
-                btnText.innerHTML = `⏳ Espera ${currentSec} segundos...`;
-                // Cálculo de barra inversa (se llena o se vacía)
+                btnText.innerHTML = `⏳ Espera ${currentSec} segundo${currentSec !== 1 ? 's' : ''}...`;
                 const percentage = ((totalTime - currentSec) / totalTime) * 100;
                 progressBar.style.width = `${percentage}%`;
                 progressBar.style.transition = "width 1s linear";
@@ -229,10 +256,7 @@
             countdownInterval = setInterval(() => {
                 seconds--;
                 updateUI(seconds);
-
-                if (seconds <= 0) {
-                    stopCountdown();
-                }
+                if (seconds <= 0) stopCountdown();
             }, 1000);
         }
 
@@ -244,7 +268,6 @@
             const funFactArea = document.getElementById('fun-fact');
             
             localStorage.removeItem(STORAGE_KEY);
-            
             funFactArea.style.height = "0";
             progressBar.style.width = "0%";
             progressBar.style.transition = "none";
@@ -255,7 +278,7 @@
             
             const msgArea = document.getElementById('message-area');
             msgArea.innerText = "✅ ¡Listo! Bob ya te puede atender.";
-            msgArea.className = "mt-6 p-3 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 transition-all duration-300 opacity-100";
+            msgArea.className = "mt-6 p-3 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 transition-all duration-300 opacity-100";
             setTimeout(() => msgArea.classList.add('opacity-0'), 3000);
         }
     </script>
